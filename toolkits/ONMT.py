@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-
 import sys
 import argparse
 
@@ -79,9 +78,14 @@ class InpsectTranslator(onmt.translate.Translator):
 
         enc_states, memory_bank = self.model.encoder(src, src_lengths)
         for i in range(memory_bank.size(1)):
-            s = representation.Dataset.Sentence(memory_bank.select(1,i).narrow(0,0,batch.src[1][i]).data.numpy())
+            if(memory_bank.select(1,i).narrow(0,0,batch.src[1][i]).data.is_cuda):
+                s = representation.Dataset.Sentence(memory_bank.select(1,i).narrow(0,0,batch.src[1][i]).data.cpu().numpy())
+            else:
+                s = representation.Dataset.Sentence(memory_bank.select(1,i).narrow(0,0,batch.src[1][i]).data.numpy())
+                
             words = []
             for j in range(batch.src[1][i]):
+                
                 words.append(self.fields["src"].vocab.itos[batch.src[0].data[j][i]])
             s.words = words;
             while(len(self.rep.sentences) <= batch.indices.data[i]):
@@ -175,11 +179,10 @@ class ONMTGenerator:
         onmt.opts.model_opts(dummy_parser)
         onmt.opts.translate_opts(dummy_parser)
         if(gpuid != ""):
-            self.opt = dummy_parser.parse_known_args(["-model",self.model,"-src",self.src,"-gpuid",self.gpuid])[0]
+            self.opt = dummy_parser.parse_known_args(["-model",self.model,"-src",self.src,"-gpu",self.gpuid])[0]
         else:
             self.opt = dummy_parser.parse_known_args(["-model",self.model,"-src",self.src])[0]            
         
-        print ("GPU:",self.opt.gpu)
         self.translator = make_translator(self.opt)
         self.translator.__class__ = InpsectTranslator
         self.translator.init_representation("testdata")
