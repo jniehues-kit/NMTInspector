@@ -3,6 +3,8 @@
 
 import sys
 from numpy import linalg as LA
+from numpy import dot
+from numpy import log
 
 class Intrinsic:
 
@@ -11,8 +13,8 @@ class Intrinsic:
 
     def inspect(self):
         self.calcMeanAndVariationWordVectors();
-        self.calcMeanActiation();
-        self.calcEntropyActiation();
+        self.calcMeanActivation();
+        self.calcEntropyActivation();
         return []
 
     def calcEntropyActivation(self):
@@ -22,18 +24,19 @@ class Intrinsic:
             for j in range(len(self.data.sentences[i].words)):
                 l = self.data.sentences[i].labels[j]
                 h = self.data.sentences[i].data[j]
-                if(l in mean):
-                    entropy[l] += np.dot(h,log(h))
-                    count[l] += h.size()
+                if(l in entropy):
+                    entropy[l] += dot(abs(h),log(abs(h)))
+                    count[l] += h.size
                 else:
-                    entropy[l] = np.dot(h,log(h))
-                    count[l] = h.size()
+                    entropy[l] = dot(abs(h),log(abs(h)))
+                    count[l] = h.size
         allEntropy = 0
         allCount = 0
-        for k in mean.keys():
+        for l in entropy.keys():
+            allCount += count[l]
             allEntropy += entropy[l]
             print ("Entropy of activation of labels",l,":",entropy[l]/count[l])
-        print ("Entropy of activation of labels:",allEntropy[l]/allCount[l])
+        print ("Entropy of activation of labels:",allEntropy/allCount)
 
 
 
@@ -45,25 +48,25 @@ class Intrinsic:
             for j in range(len(self.data.sentences[i].words)):
                 l = self.data.sentences[i].labels[j]
                 h = self.data.sentences[i].data[j]
-                if(l in mean):
-                    abnsmean[l] += sum(abs(h))
-                    qmean[l] += np.dot(h,h)
-                    count[l] += h.size()
+                if(l in absmean):
+                    absmean[l] += sum(abs(h))
+                    qmean[l] += dot(h,h)
+                    count[l] += h.size
                 else:
                     absmean[l] = sum(abs(h))
-                    qmean[l] = np.dot(h,h)
-                    count[l] = h.size()
+                    qmean[l] = dot(h,h)
+                    count[l] = h.size
         allAbsmean = 0
         allQmean = 0
         allCount = 0
-        for k in mean.keys():
+        for l in absmean.keys():
             allAbsmean += absmean[l]
             allQmean += qmean[l]
-            allCount += count
+            allCount += count[l]
             print ("Absolut mean activation of labels",l,":",absmean[l]/count[l])
             print ("Quadratic mean activation of labels",l,":",qmean[l]/count[l])
-        print ("Absolut mean activation of labels:",allAbsmean[l]/allCount[l])
-        print ("Quadratic mean activation of labels:",allQmean[l]/allCount[l])
+        print ("Absolut mean activation of labels:",allAbsmean/allCount)
+        print ("Quadratic mean activation of labels:",allQmean/allCount)
 
 
 
