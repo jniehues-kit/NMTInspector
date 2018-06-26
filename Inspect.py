@@ -90,7 +90,7 @@ def main():
     ## save hidden representation if necessry
     #if(opt.hidden_representation_out != ""):
         
-        
+
     #inpsect hidden representation
     if(opt.ml_technique  == "intrinsic"):
         result = inspector.Intrinsic.inspect(data)

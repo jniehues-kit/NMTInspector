@@ -87,7 +87,7 @@ class InpsectTranslator(onmt.translate.Translator):
             while(len(self.rep.sentences) <= batch.indices.data[i]):
                 self.rep.sentences.append(None)
             self.rep.sentences[batch.indices.data[i]] = s
-        
+
         dec_states = self.model.decoder.init_decoder_state(
             src, memory_bank, enc_states)
 
@@ -186,7 +186,7 @@ class ONMTGenerator:
         
     def generate(self):
         self.translator.translate(self.opt.src_dir,self.opt.src,self.opt.tgt,self.opt.batch_size,self.opt.attn_debug)
-        return self.translator.rep 
+        return self.translator.rep
 
 
 
