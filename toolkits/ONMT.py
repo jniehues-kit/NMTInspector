@@ -165,17 +165,21 @@ class ONMTGenerator:
 
 
     
-    def __init__(self,model,src,representation):
+    def __init__(self,model,src,representation,gpuid):
         self.model = model;
         self.representation = representation
         self.src = src
+        self.gpuid = gpuid
 
         dummy_parser = argparse.ArgumentParser(description='train.py')
         onmt.opts.model_opts(dummy_parser)
         onmt.opts.translate_opts(dummy_parser)
-        self.opt = dummy_parser.parse_known_args(["-model",self.model,"-src",self.src])[0]
+        if(gpuid != ""):
+            self.opt = dummy_parser.parse_known_args(["-model",self.model,"-src",self.src,"-gpuid",self.gpuid])[0]
+        else:
+            self.opt = dummy_parser.parse_known_args(["-model",self.model,"-src",self.src])[0]            
         
-        
+        print ("GPU:",self.opt.gpu)
         self.translator = make_translator(self.opt)
         self.translator.__class__ = InpsectTranslator
         self.translator.init_representation("testdata")
@@ -186,6 +190,6 @@ class ONMTGenerator:
 
 
 
-def generate(source_test_data,model,representation):
-    g = ONMTGenerator(model,source_test_data,representation)
+def generate(source_test_data,model,representation,gpuid):
+    g = ONMTGenerator(model,source_test_data,representation,gpuid)
     return g.generate()

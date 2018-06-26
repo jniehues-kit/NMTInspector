@@ -51,6 +51,9 @@ def main():
     parser.add_argument('-hidden_representation_out', type=str, default="",
                         help="""JSON File to store the hidden representation""")
 
+    # GPU
+    parser.add_argument('-gpuid', default="", type=str,
+                       help="Use CUDA on the listed devices.")
 
 
 
@@ -69,7 +72,7 @@ def main():
             logging.error("No model type given to generate the hidden represnation");
             exit(-1);
         elif(opt.model_type == "OpenNMT"):
-            data = toolkits.ONMT.generate(opt.source_test_data,opt.model,opt.representation)
+            data = toolkits.ONMT.generate(opt.source_test_data,opt.model,opt.representation,opt.gpuid)
         else:
             logging.error("Unknown model type:",opt.model_type)
             exit(-1)
