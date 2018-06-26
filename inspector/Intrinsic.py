@@ -5,6 +5,7 @@ import sys
 from numpy import linalg as LA
 from numpy import dot
 from numpy import log
+from numpy import copy
 
 class Intrinsic:
 
@@ -82,7 +83,7 @@ class Intrinsic:
                     mean[l] += h
                     count[l] += 1
                 else:
-                    mean[l] = h
+                    mean[l] = copy(h)
                     count[l] = 1
         for k in mean.keys():
             mean[k] = mean[k]/count[k]
