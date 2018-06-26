@@ -22,7 +22,7 @@ def main():
     
     
     parser.add_argument('-prediction_task', type=str, required=True,
-                        choices=['BPE'],
+                        choices=['BPE','SentenceLabels'],
                         help="""Predicition task to be used to analyse the hidden representations""")
 
     parser.add_argument('-ml_technique', type=str, default="intrinsic",
@@ -50,6 +50,10 @@ def main():
 
     parser.add_argument('-hidden_representation_out', type=str, default="",
                         help="""JSON File to store the hidden representation""")
+
+    parser.add_argument('-label_file', type=str, default="",
+                        help="""Label File""")
+
 
     # GPU
     parser.add_argument('-gpuid', default="", type=str,
@@ -86,6 +90,8 @@ def main():
     #annote hidden representation with labels
     if(opt.prediction_task == "BPE"):
         annotator.BPE.annotate(data);
+    elif(opt.prediction_task == "SentenceLabels"):
+        annotator.SentenceLabels.annotate(data,opt.label_file)
 
     ## save hidden representation if necessry
     #if(opt.hidden_representation_out != ""):
