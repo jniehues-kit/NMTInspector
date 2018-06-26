@@ -6,6 +6,7 @@ from numpy import linalg as LA
 from numpy import dot
 from numpy import log
 from numpy import copy
+from numpy import zeros
 
 class Intrinsic:
 
@@ -75,6 +76,8 @@ class Intrinsic:
     def calcMeanAndVariationWordVectors(self):
         mean = {}
         count = {}
+        meanAll = zeros(self.data.sentences[0].data[0].shape)
+        countAll = 0
         for i in range(len(self.data.sentences)):
             for j in range(len(self.data.sentences[i].words)):
                 l = self.data.sentences[i].labels[j]
@@ -85,19 +88,25 @@ class Intrinsic:
                 else:
                     mean[l] = copy(h)
                     count[l] = 1
+                meanAll += h
+                countAll += 1
         for k in mean.keys():
             mean[k] = mean[k]/count[k]
+        meanAll = meanAll/countAll
         for k in mean.keys():
             for l in mean.keys():
                 if(l != k):
                     diff = LA.norm(mean[k] - mean[l])
                     print ("Mean different of labels",l,"and",k,":",diff)
+        print ("Mean vector:",LA.norm(meanAll))
         diff = {}
+        diffAll = 0
         for i in range(len(self.data.sentences)):
             for j in range(len(self.data.sentences[i].words)):
                 l = self.data.sentences[i].labels[j]
                 h = self.data.sentences[i].data[j]
                 d = LA.norm(h - mean[l])
+                diffAll += LA.norm(h-meanAll)
                 if(l in diff):
                     diff[l] += d
                 else:
@@ -106,7 +115,8 @@ class Intrinsic:
         for k in diff.keys():
             diff[k] = diff[k]/count[k]
             print("Variance in cluster",k,":",diff[k])
-    
+        print("Overall Variance:",diffAll/countAll)
+
 def inspect(data):
     a = Intrinsic(data)
     return a.inspect()
