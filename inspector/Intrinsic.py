@@ -10,10 +10,65 @@ class Intrinsic:
         self.data = data
 
     def inspect(self):
-        self.calcMeanAndVariation();
+        self.calcMeanAndVariationWordVectors();
+        self.calcMeanActiation();
+        self.calcEntropyActiation();
         return []
 
-    def calcMeanAndVariation(self):
+    def calcEntropyActivation(self):
+        entropy = {}
+        count = {}
+        for i in range(len(self.data.sentences)):
+            for j in range(len(self.data.sentences[i].words)):
+                l = self.data.sentences[i].labels[j]
+                h = self.data.sentences[i].data[j]
+                if(l in mean):
+                    entropy[l] += np.dot(h,log(h))
+                    count[l] += h.size()
+                else:
+                    entropy[l] = np.dot(h,log(h))
+                    count[l] = h.size()
+        allEntropy = 0
+        allCount = 0
+        for k in mean.keys():
+            allEntropy += entropy[l]
+            print ("Entropy of activation of labels",l,":",entropy[l]/count[l])
+        print ("Entropy of activation of labels:",allEntropy[l]/allCount[l])
+
+
+
+    def calcMeanActivation(self):
+        absmean = {}
+        qmean = {}
+        count = {}
+        for i in range(len(self.data.sentences)):
+            for j in range(len(self.data.sentences[i].words)):
+                l = self.data.sentences[i].labels[j]
+                h = self.data.sentences[i].data[j]
+                if(l in mean):
+                    abnsmean[l] += sum(abs(h))
+                    qmean[l] += np.dot(h,h)
+                    count[l] += h.size()
+                else:
+                    absmean[l] = sum(abs(h))
+                    qmean[l] = np.dot(h,h)
+                    count[l] = h.size()
+        allAbsmean = 0
+        allQmean = 0
+        allCount = 0
+        for k in mean.keys():
+            allAbsmean += absmean[l]
+            allQmean += qmean[l]
+            allCount += count
+            print ("Absolut mean activation of labels",l,":",absmean[l]/count[l])
+            print ("Quadratic mean activation of labels",l,":",qmean[l]/count[l])
+        print ("Absolut mean activation of labels:",allAbsmean[l]/allCount[l])
+        print ("Quadratic mean activation of labels:",allQmean[l]/allCount[l])
+
+
+
+
+    def calcMeanAndVariationWordVectors(self):
         mean = {}
         count = {}
         for i in range(len(self.data.sentences)):
@@ -24,7 +79,7 @@ class Intrinsic:
                     mean[l] += h
                     count[l] += 1
                 else:
-                    mean[l] = 1
+                    mean[l] = h
                     count[l] = 1
         for k in mean.keys():
             mean[k] = mean[k]/count[k]
