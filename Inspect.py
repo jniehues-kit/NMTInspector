@@ -21,7 +21,7 @@ def main():
     parser = argparse.ArgumentParser(description='Inspect.py')
     
     
-    parser.add_argument('-prediction_task', type=str, required=True,
+    parser.add_argument('-prediction_task', type=str,default="",
                         choices=['BPE','SentenceLabels'],
                         help="""Predicition task to be used to analyse the hidden representations""")
 

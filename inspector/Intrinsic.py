@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-
+from __future__ import print_function
 import sys
 from numpy import linalg as LA
 from numpy import dot
@@ -17,6 +17,7 @@ class Intrinsic:
         self.calcMeanAndVariationWordVectors();
         self.calcMeanActivation();
         self.calcEntropyActivation();
+        self.calcHistogram();
         return []
 
     def calcEntropyActivation(self):
@@ -24,7 +25,10 @@ class Intrinsic:
         count = {}
         for i in range(len(self.data.sentences)):
             for j in range(len(self.data.sentences[i].words)):
-                l = self.data.sentences[i].labels[j]
+                try:
+                    l = self.data.sentences[i].labels[j]
+                except AttributeError:
+                    l = "none"
                 h = self.data.sentences[i].data[j]
                 if(l in entropy):
                     entropy[l] += dot(abs(h),log(abs(h)))
@@ -48,7 +52,10 @@ class Intrinsic:
         count = {}
         for i in range(len(self.data.sentences)):
             for j in range(len(self.data.sentences[i].words)):
-                l = self.data.sentences[i].labels[j]
+                try:
+                    l = self.data.sentences[i].labels[j]
+                except AttributeError:
+                    l = "none"
                 h = self.data.sentences[i].data[j]
                 if(l in absmean):
                     absmean[l] += sum(abs(h))
@@ -71,6 +78,34 @@ class Intrinsic:
         print ("Quadratic mean activation of labels:",allQmean/allCount)
 
 
+    def calcHistogram(self):
+        hist = {}
+        allHist = []
+        for i in range(len(self.data.sentences)):
+            for j in range(len(self.data.sentences[i].words)):
+                try:
+                    l = self.data.sentences[i].labels[j]
+                except AttributeError:
+                    l = "none"
+                h = self.data.sentences[i].data[j]
+                if(l in hist):
+                    hist[l] += h.tolist()
+                else:
+                    hist[l] = h.tolist()
+                allHist += h.tolist()
+        allHist.sort()
+        for l in hist.keys():
+            hist[l].sort()
+            print("Histogramm for ",l,hist[l][0],end=" ")
+            for i in range(10):
+                index =  int((i+1.0)/10*len(hist[l]))-1
+                print (hist[l][index],end=" ")
+            print ("")
+        print("Histogramm for all",allHist[0],end=" ")
+        for i in range(10):
+            index =  int((i+1.0)/10*len(allHist))-1
+            print (allHist[index],end=" ")
+        print ("")
 
 
     def calcMeanAndVariationWordVectors(self):
@@ -80,7 +115,10 @@ class Intrinsic:
         countAll = 0
         for i in range(len(self.data.sentences)):
             for j in range(len(self.data.sentences[i].words)):
-                l = self.data.sentences[i].labels[j]
+                try:
+                    l = self.data.sentences[i].labels[j]
+                except AttributeError:
+                    l = "none"
                 h = self.data.sentences[i].data[j]
                 if(l in mean):
                     mean[l] += h
@@ -103,7 +141,10 @@ class Intrinsic:
         diffAll = 0
         for i in range(len(self.data.sentences)):
             for j in range(len(self.data.sentences[i].words)):
-                l = self.data.sentences[i].labels[j]
+                try:
+                    l = self.data.sentences[i].labels[j]
+                except AttributeError:
+                    l = "none"
                 h = self.data.sentences[i].data[j]
                 d = LA.norm(h - mean[l])
                 diffAll += LA.norm(h-meanAll)
