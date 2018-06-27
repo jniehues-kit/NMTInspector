@@ -9,6 +9,7 @@ import logging
 #import representation.DataSet
 import annotator.BPE
 import inspector.Intrinsic
+import inspector.Classifier
 import json
 
 
@@ -26,7 +27,7 @@ def main():
                         help="""Predicition task to be used to analyse the hidden representations""")
 
     parser.add_argument('-ml_technique', type=str, default="intrinsic",
-                        choices=['intrinsic','supervised','unsupervised'],
+                        choices=['intrinsic','classifier','squeuncePrediction','unsupervised'],
                         help="""Technique used to analse the hidden representations""")
 
 
@@ -100,6 +101,8 @@ def main():
     #inpsect hidden representation
     if(opt.ml_technique  == "intrinsic"):
         result = inspector.Intrinsic.inspect(data)
+    elif(opt.ml_technique == "classifier"):
+        result = inspector.Classifier.inspect(data)
 
 
     #store result if necessay
