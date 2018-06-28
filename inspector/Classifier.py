@@ -7,23 +7,54 @@ import torch.utils as utils
 from torch import IntTensor
 from torch import FloatTensor
 from torch.autograd import Variable
+import torch
+import deepdish as dd
+from numpy import zeros
+
 
 class Classifier:
 
-    def __init__(self, data):
+    def __init__(self, data,model_file,load_model,store_model,input_type):
         self.data = data
         self.epochs = 10
+        self.model_file = model_file
+        self.load_model = load_model
+        self.store_model = store_model
+        self.input_type = input_type
 
 
 
 
     def inspect(self):
 
+        if self.load_model:
+            self.load()
         self.prepareData()
-        self.buildModel();
-        self.train()
+        if not self.load_model:
+            self.buildModel();
+            self.train()
+        self.model.eval()
         self.predict()
-        #self.save()
+        if self.store_model:
+            self.save()
+
+    def load(self):
+        param = dd.io.load(self.model_file+".paramter.h5")
+        self.mapping = param["mapping"]
+        self.inputSize = param['inputSize']
+        self.outputSize = param['outputSize']
+        self.model = nn.Sequential(nn.Linear(self.inputSize,self.outputSize))
+        self.model.load_state_dict(torch.load(self.model_file+".model"))
+
+
+    def save(self):
+        dd.io.save(self.model_file+".paramter.h5", {'mapping': self.mapping,
+                                                'inputSize': self.inputSize,
+                                                'outputSize':self.outputSize},
+                                  compression=('blosc', 9))
+        torch.save(self.model.state_dict(), self.model_file+".model")
+
+
 
     def prepareData(self):
 
@@ -32,9 +63,28 @@ class Classifier:
         self.mapping = {}
 
         for i in range(len(self.data.sentences)):
-            for j in range(len(self.data.sentences[i].words)):
+            if(self.input_type == "word"):
+                for j in range(len(self.data.sentences[i].words)):
+                    try:
+                        l = self.data.sentences[i].labels[j]
+                    except AttributeError:
+                        l = "none"
+
+                    if l in self.mapping:
+                        c = self.mapping[l]
+                    else:
+                        c = len(self.mapping)
+                        self.mapping[l] = c
+
+                    samples.append(self.data.sentences[i].data[j].tolist())
+                    labels.append(c)
+            elif(self.input_type == "sentence"):
+                d = zeros(self.data.sentences[i].data[0].shape)
+                for j in range(len(self.data.sentences[i].words)):
+                    d += self.data.sentences[i].data[j]
+                samples.append(d.tolist())
                 try:
-                    l = self.data.sentences[i].labels[j]
+                    l = self.data.sentences[i].label
                 except AttributeError:
                     l = "none"
 
@@ -43,8 +93,6 @@ class Classifier:
                 else:
                     c = len(self.mapping)
                     self.mapping[l] = c
-
-                samples.append(self.data.sentences[i].data[j].tolist())
                 labels.append(c)
 
         data = utils.data.TensorDataset(FloatTensor(samples), IntTensor(labels))
@@ -52,15 +100,17 @@ class Classifier:
                                                   shuffle=True)
 
     def buildModel(self):
-        inputSize = self.data.sentences[0].data[0].size
-        outputSize = len(self.mapping)
-        self.model = nn.Sequential(nn.Linear(inputSize,outputSize))
+        self.inputSize = self.data.sentences[0].data[0].size
+        self.outputSize = len(self.mapping)
+        self.model = nn.Sequential(nn.Linear(self.inputSize,self.outputSize))
         self.criterion = nn.CrossEntropyLoss()
         self.optimizer = optim.Adam(self.model.parameters(), lr = 0.0001)
 
 
     def predict(self):
 
+        correct = 0;
+        all = 0;
 
         for i, data in enumerate(self.trainloader, 0):
             # get the inputs
@@ -72,9 +122,10 @@ class Classifier:
             #loss = self.criterion(outputs, labels)
             outputs = self.model(Variable(inputs))
             top_n, top_i = outputs.topk(1)
-            #print ("Labels:",labels)
-            #print ("Prediction:",outputs)
+            correct += top_i.view(labels.size()).eq(Variable(labels)).sum().data[0]
+            all += labels.numel();
 
+        print(correct," of ",all,"elements correct: ",1.0*correct/all)
 
     def train(self):
 
@@ -110,6 +161,6 @@ class Classifier:
 
 
 
-def inspect(data):
-    a = Classifier(data)
+def inspect(data,model_file,load_model,store_model,input_type):
+    a = Classifier(data,model_file,load_model,store_model,input_type)
     return a.inspect()

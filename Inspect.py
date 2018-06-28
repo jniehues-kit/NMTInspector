@@ -30,6 +30,17 @@ def main():
                         choices=['intrinsic','classifier','squeuncePrediction','unsupervised'],
                         help="""Technique used to analse the hidden representations""")
 
+    parser.add_argument('-inspection_model', type=str, default="",
+                        help="""File to save/load the model used for inspection""")
+    parser.add_argument('-store_inspection_model', action='store_true',
+                       help="""Store the model used for inpsection""")
+    parser.add_argument('-load_inspection_model', action='store_true',
+                       help="""Load the model used for inpsection""")
+    parser.add_argument('-inspection_model_input', type=str, default="Word",
+                        choices=['word','sentence'],
+                        help="""Use inspection model to predict:\n
+                        Word: One label per word\n
+                        Sentence: One label per word ( take sum of word representations )""")
 
     parser.add_argument('-representation', type=str, default="EncoderWordEmbeddings",
                         choices=['EncoderWordEmbeddings','EncoderHiddenLayer'],
@@ -102,7 +113,10 @@ def main():
     if(opt.ml_technique  == "intrinsic"):
         result = inspector.Intrinsic.inspect(data)
     elif(opt.ml_technique == "classifier"):
-        result = inspector.Classifier.inspect(data)
+        result = inspector.Classifier.inspect(data,opt.inspection_model,
+                                              opt.load_inspection_model,
+                                              opt.store_inspection_model,
+                                              opt.inspection_model_input);
 
 
     #store result if necessay
