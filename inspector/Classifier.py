@@ -48,8 +48,8 @@ class Classifier:
         param = dd.io.load(self.model_file+".paramter.h5")
         self.mapping = param["mapping"]
         self.labels = param["labels"]
-        self.inputSize = param['inputSize']
-        self.outputSize = param['outputSize']
+        self.inputSize = param['inputSize'].item()
+        self.outputSize = param['outputSize'].item()
         self.model = nn.Sequential(nn.Linear(self.inputSize,self.outputSize))
         self.model.load_state_dict(torch.load(self.model_file+".model"))
 
