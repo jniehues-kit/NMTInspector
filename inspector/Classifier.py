@@ -14,7 +14,7 @@ from numpy import zeros
 
 class Classifier:
 
-    def __init__(self, data,model_file,load_model,store_model,input_type):
+    def __init__(self, data,model_file,load_model,store_model,input_type,output):
         self.data = data
         self.epochs = 10
         self.model_file = model_file
@@ -34,11 +34,11 @@ class Classifier:
         self.prepareData()
         if not self.load_model:
             self.buildModel();
-            self.trainloader = utils.data.DataLoader(self.data, batch_size=16,
+            self.trainloader = utils.data.DataLoader(self.dataset, batch_size=16,
                                                      shuffle=True)
             self.train()
         self.model.eval()
-        self.trainloader = utils.data.DataLoader(self.data, batch_size=16,
+        self.trainloader = utils.data.DataLoader(self.dataset, batch_size=16,
                                                  shuffle=False)
         self.predict()
         if self.store_model:
@@ -56,7 +56,7 @@ class Classifier:
 
     def save(self):
         dd.io.save(self.model_file+".paramter.h5", {'mapping': self.mapping,
-                                                    'labeels': self.labels,
+                                                    'labels': self.labels,
                                                 'inputSize': self.inputSize,
                                                 'outputSize':self.outputSize},
                                   compression=('blosc', 9))
@@ -82,7 +82,7 @@ class Classifier:
                     else:
                         c = len(self.mapping)
                         self.mapping[l] = c
-                        self.labels.append[l]
+                        self.labels.append(l)
 
                     samples.append(self.data.sentences[i].data[j].tolist())
                     labels.append(c)
@@ -101,10 +101,10 @@ class Classifier:
                 else:
                     c = len(self.mapping)
                     self.mapping[l] = c
-                    self.labels.append[l]
+                    self.labels.append(l)
                 labels.append(c)
 
-        self.data = utils.data.TensorDataset(FloatTensor(samples), IntTensor(labels))
+        self.dataset = utils.data.TensorDataset(FloatTensor(samples), IntTensor(labels))
 
     def buildModel(self):
         self.inputSize = self.data.sentences[0].data[0].size
@@ -133,7 +133,7 @@ class Classifier:
             all += labels.numel();
             if(self.output):
                 for i in range(top_i.size(0)):
-                    print ("Prediction: ",self.label[top_i[i][0]]," Reference:",self.label[labels]
+                    print ("Prediction: ",self.labels[top_i.data[i][0]]," Reference:",self.labels[labels[i]])
 
         print(correct," of ",all,"elements correct: ",1.0*correct/all)
 
