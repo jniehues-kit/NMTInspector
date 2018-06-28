@@ -36,6 +36,8 @@ def main():
                        help="""Store the model used for inpsection""")
     parser.add_argument('-load_inspection_model', action='store_true',
                        help="""Load the model used for inpsection""")
+    parser.add_argument('-output_predictions', action='store_true',
+                       help="""Output class prediction for all sentences""")
     parser.add_argument('-inspection_model_input', type=str, default="Word",
                         choices=['word','sentence'],
                         help="""Use inspection model to predict:\n
@@ -116,7 +118,8 @@ def main():
         result = inspector.Classifier.inspect(data,opt.inspection_model,
                                               opt.load_inspection_model,
                                               opt.store_inspection_model,
-                                              opt.inspection_model_input);
+                                              opt.inspection_model_input,
+                                              opt.output_predictions);
 
 
     #store result if necessay

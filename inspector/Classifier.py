@@ -21,7 +21,9 @@ class Classifier:
         self.load_model = load_model
         self.store_model = store_model
         self.input_type = input_type
-
+        self.mapping = {}
+        self.labels = []
+        self.output = output
 
 
 
@@ -32,8 +34,12 @@ class Classifier:
         self.prepareData()
         if not self.load_model:
             self.buildModel();
+            self.trainloader = utils.data.DataLoader(self.data, batch_size=16,
+                                                     shuffle=True)
             self.train()
         self.model.eval()
+        self.trainloader = utils.data.DataLoader(self.data, batch_size=16,
+                                                 shuffle=False)
         self.predict()
         if self.store_model:
             self.save()
@@ -41,6 +47,7 @@ class Classifier:
     def load(self):
         param = dd.io.load(self.model_file+".paramter.h5")
         self.mapping = param["mapping"]
+        self.labels = param["labels"]
         self.inputSize = param['inputSize']
         self.outputSize = param['outputSize']
         self.model = nn.Sequential(nn.Linear(self.inputSize,self.outputSize))
@@ -49,6 +56,7 @@ class Classifier:
 
     def save(self):
         dd.io.save(self.model_file+".paramter.h5", {'mapping': self.mapping,
+                                                    'labeels': self.labels,
                                                 'inputSize': self.inputSize,
                                                 'outputSize':self.outputSize},
                                   compression=('blosc', 9))
@@ -60,7 +68,6 @@ class Classifier:
 
         samples = []
         labels = []
-        self.mapping = {}
 
         for i in range(len(self.data.sentences)):
             if(self.input_type == "word"):
@@ -75,6 +82,7 @@ class Classifier:
                     else:
                         c = len(self.mapping)
                         self.mapping[l] = c
+                        self.labels.append[l]
 
                     samples.append(self.data.sentences[i].data[j].tolist())
                     labels.append(c)
@@ -93,11 +101,10 @@ class Classifier:
                 else:
                     c = len(self.mapping)
                     self.mapping[l] = c
+                    self.labels.append[l]
                 labels.append(c)
 
-        data = utils.data.TensorDataset(FloatTensor(samples), IntTensor(labels))
-        self.trainloader = utils.data.DataLoader(data, batch_size=16,
-                                                  shuffle=True)
+        self.data = utils.data.TensorDataset(FloatTensor(samples), IntTensor(labels))
 
     def buildModel(self):
         self.inputSize = self.data.sentences[0].data[0].size
@@ -124,6 +131,9 @@ class Classifier:
             top_n, top_i = outputs.topk(1)
             correct += top_i.view(labels.size()).eq(Variable(labels)).sum().data[0]
             all += labels.numel();
+            if(self.output):
+                for i in range(top_i.size(0)):
+                    print ("Prediction: ",self.label[top_i[i][0]]," Reference:",self.label[labels]
 
         print(correct," of ",all,"elements correct: ",1.0*correct/all)
 
@@ -161,6 +171,6 @@ class Classifier:
 
 
 
-def inspect(data,model_file,load_model,store_model,input_type):
-    a = Classifier(data,model_file,load_model,store_model,input_type)
+def inspect(data,model_file,load_model,store_model,input_type,output):
+    a = Classifier(data,model_file,load_model,store_model,input_type,output)
     return a.inspect()
