@@ -53,7 +53,11 @@ class Classifier:
         self.model = nn.Sequential(nn.Linear(self.inputSize,self.outputSize))
         self.model.load_state_dict(torch.load(self.model_file+".model"))
 
+        #dd changed int to numpy.int64, change it back
+        for k in self.mapping.keys():
+            self.mapping[k] = self.mapping[k].item()
 
+        
     def save(self):
         dd.io.save(self.model_file+".paramter.h5", {'mapping': self.mapping,
                                                     'labels': self.labels,
@@ -67,7 +71,7 @@ class Classifier:
     def prepareData(self):
 
         samples = []
-        labels = []
+        ls = []
 
         for i in range(len(self.data.sentences)):
             if(self.input_type == "word"):
@@ -85,7 +89,7 @@ class Classifier:
                         self.labels.append(l)
 
                     samples.append(self.data.sentences[i].data[j].tolist())
-                    labels.append(c)
+                    ls.append(c)
             elif(self.input_type == "sentence"):
                 d = zeros(self.data.sentences[i].data[0].shape)
                 for j in range(len(self.data.sentences[i].words)):
@@ -102,9 +106,9 @@ class Classifier:
                     c = len(self.mapping)
                     self.mapping[l] = c
                     self.labels.append(l)
-                labels.append(c)
+                ls.append(c)
 
-        self.dataset = utils.data.TensorDataset(FloatTensor(samples), IntTensor(labels))
+        self.dataset = utils.data.TensorDataset(FloatTensor(samples), IntTensor(ls))
 
     def buildModel(self):
         self.inputSize = self.data.sentences[0].data[0].size
