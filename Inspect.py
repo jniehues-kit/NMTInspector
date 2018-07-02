@@ -4,6 +4,7 @@
 import sys
 
 import toolkits.ONMT
+import toolkits.vivisectONMT
 import argparse
 import logging
 #import representation.DataSet
@@ -55,7 +56,7 @@ def main():
                         help="""Model that should be analyzed""")
 
     parser.add_argument('-model_type', type=str, default="",
-                        choices=['OpenNMT'],
+                        choices=['OpenNMT','vivisectONMT'],
                         help="""Framework used to train the model""")
 
 
@@ -91,6 +92,8 @@ def main():
             exit(-1);
         elif(opt.model_type == "OpenNMT"):
             data = toolkits.ONMT.generate(opt.source_test_data,opt.model,opt.representation,opt.gpuid)
+        elif (opt.model_type == "vivisectONMT"):
+            data = toolkits.vivisectONMT.generate(opt.source_test_data, opt.model, opt.representation, opt.gpuid)
         else:
             logging.error("Unknown model type:",opt.model_type)
             exit(-1)
