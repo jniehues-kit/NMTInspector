@@ -36,7 +36,9 @@ class ONMTGenerator:
 
         self.translator.model.encoder._vivisect = {"iteration": 0, "model_name": "OpenNMT", "framework": "pytorch"}
 
-        probe(self.translator.model.encoder, "localhost", self.port, monitorONMT, performONMT)
+
+        if(self.representation == "EncoderWordEmbeddings" or self.represenation == "EncoderHiddenLayer"):
+            probe(self.translator.model.encoder, "localhost", self.port, self.monitorONMT, performONMT)
 
 
         self.collector = Collector(self.representation);
@@ -55,10 +57,12 @@ class ONMTGenerator:
         clear("localhost", self.port)
         return self.collector.data
 
-def monitorONMT(layer):
-    if(type(layer).__name__ == "LSTM"):
-        return True
-    return False
+    def monitorONMT(self,layer):
+        if(type(layer).__name__ == "LSTM" and self.representation == "EncoderHiddenLayer"):
+            return True
+        elif (type(layer).__name__ == "Embeddings" and self.representation == "EncoderWordEmbeddings"):
+            return True
+        return False
 
 def performONMT(model, op, inputs, outputs):
     return True
@@ -108,5 +112,12 @@ class Collector(Flask):
             s = representation.Dataset.Sentence(lstm)
             s.words = []
             for i in range(len(lstm)):
+                s.words.append("UNK")
+            self.data.sentences.append(s)
+        elif(self.representation == "EncoderWordEmbeddings"):
+            emb = numpy.array(data).squeeze()
+            s = representation.Dataset.Sentence(emb)
+            s.words = []
+            for i in range(len(emb)):
                 s.words.append("UNK")
             self.data.sentences.append(s)
