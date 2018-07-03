@@ -22,6 +22,7 @@ class ONMTGenerator:
         self.representation = representation
         self.src = src
         self.gpuid = gpuid
+        self.port = 8882
 
         dummy_parser = argparse.ArgumentParser(description='train.py')
         onmt.opts.model_opts(dummy_parser)
@@ -35,7 +36,7 @@ class ONMTGenerator:
 
         self.translator.model.encoder._vivisect = {"iteration": 0, "model_name": "OpenNMT", "framework": "pytorch"}
 
-        probe(self.translator.model.encoder, "localhost", 8080, monitorONMT, performONMT)
+        probe(self.translator.model.encoder, "localhost", self.port, monitorONMT, performONMT)
 
 
         self.collector = Collector(self.representation);
@@ -44,14 +45,14 @@ class ONMTGenerator:
 
     def generate(self):
         #self.startCollector()
-        t = Thread(target=startCollector, args=(self.collector,))
+        t = Thread(target=startCollector, args=(self.collector,self.port,))
         t.start()
         self.translator.translate(src_path=self.opt.src,
                              tgt_path=self.opt.tgt,
                              src_dir=self.opt.src_dir,
                              batch_size=1,
                              attn_debug=self.opt.attn_debug)
-        clear("localhost", 8080)
+        clear("localhost", self.port)
         return self.collector.data
 
 def monitorONMT(layer):
@@ -62,8 +63,8 @@ def monitorONMT(layer):
 def performONMT(model, op, inputs, outputs):
     return True
 
-def startCollector(collector):
-    collector.run(port=8080,debug=False)
+def startCollector(collector,port):
+    collector.run(port=port,debug=False)
 
 
 

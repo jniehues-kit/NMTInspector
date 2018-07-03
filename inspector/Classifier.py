@@ -6,7 +6,6 @@ import torch.optim as optim
 import torch.utils as utils
 from torch import IntTensor
 from torch import FloatTensor
-from torch.autograd import Variable
 import torch
 import deepdish as dd
 from numpy import zeros
@@ -129,11 +128,9 @@ class Classifier:
 
 
             # forward + backward + optimize
-            #outputs = self.model(inputs)
-            #loss = self.criterion(outputs, labels)
-            outputs = self.model(Variable(inputs))
+            outputs = self.model(inputs.double())
             top_n, top_i = outputs.topk(1)
-            correct += top_i.view(labels.size()).eq(Variable(labels)).sum().data[0]
+            correct += top_i.view(labels.size()).eq(labels.long()).sum().item()
             all += labels.numel();
             if(self.output):
                 for i in range(top_i.size(0)):
@@ -154,16 +151,13 @@ class Classifier:
                 self.optimizer.zero_grad()
 
                 # forward + backward + optimize
-                #outputs = self.model(inputs)
-                #loss = self.criterion(outputs, labels)
-                outputs = self.model(Variable(inputs))
-                loss = self.criterion(outputs, Variable(labels))
+                outputs = self.model(inputs.double())
+                loss = self.criterion(outputs, labels.long())
                 loss.backward()
                 self.optimizer.step()
 
                 # print statistics
-                #running_loss += loss.item()
-                running_loss += loss;
+                running_loss += loss.item();
                 if i % 100 == 99:  # print every 2000 mini-batches
                     print('[%d, %5d] loss: %.3f' %
                           (epoch + 1, i + 1, running_loss / (i+1)))
