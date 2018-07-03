@@ -2,22 +2,18 @@
 
 import argparse
 
-from onmt.translate.Translator import make_translator
+from onmt.translate.translator import build_translator
 import onmt.opts
-import onmt.translate.Translator
+import onmt.translate.translator
 
 from vivisect.pytorch import probe
+from vivisect.servers import clear
+from threading import Thread
 
 import representation.Dataset
+from flask import Flask, request
 
-
-def monitorONMT(layer):
-    print ("Layer:",layer)
-    return True
-
-def performONMT(model, op, inputs, outputs):
-    return True
-
+import numpy
 
 class ONMTGenerator:
 
@@ -35,16 +31,40 @@ class ONMTGenerator:
         else:
             self.opt = dummy_parser.parse_known_args(["-model", self.model, "-src", self.src])[0]
 
-        self.translator = make_translator(self.opt)
+        self.translator = build_translator(self.opt)
 
-        probe(self.translator.model.encoder, "0.0.0.0", 39628, monitorONMT, performONMT)
+        self.translator.model.encoder._vivisect = {"iteration": 0, "model_name": "OpenNMT", "framework": "pytorch"}
 
+        probe(self.translator.model.encoder, "localhost", 8080, monitorONMT, performONMT)
+
+
+        self.collector = Collector(self.representation);
         #self.translator.init_representation("testdata")
 
+
     def generate(self):
-        self.translator.translate(self.opt.src_dir, self.opt.src, self.opt.tgt, self.opt.batch_size,
-                                  self.opt.attn_debug)
-        return self.translator.rep
+        #self.startCollector()
+        t = Thread(target=startCollector, args=(self.collector,))
+        t.start()
+        self.translator.translate(src_path=self.opt.src,
+                             tgt_path=self.opt.tgt,
+                             src_dir=self.opt.src_dir,
+                             batch_size=1,
+                             attn_debug=self.opt.attn_debug)
+        clear("localhost", 8080)
+        return self.collector.data
+
+def monitorONMT(layer):
+    if(type(layer).__name__ == "LSTM"):
+        return True
+    return False
+
+def performONMT(model, op, inputs, outputs):
+    return True
+
+def startCollector(collector):
+    collector.run(port=8080,debug=False)
+
 
 
 def generate(source_test_data, model, representation, gpuid):
@@ -52,3 +72,40 @@ def generate(source_test_data, model, representation, gpuid):
     return g.generate()
 
 
+
+
+
+
+class Collector(Flask):
+
+    def __init__(self,rep):
+        super(Collector, self).__init__("Collector")
+        self.data = representation.Dataset.Dataset("testdata")
+        self.representation = rep
+
+        @self.route("/clear", methods=["POST"])
+        def clear():
+            func = request.environ.get('werkzeug.server.shutdown')
+            if func is None:
+                raise RuntimeError('Not running with the Werkzeug Server')
+            func()
+            return "OK"
+
+        @self.route("/", methods=["GET", "POST"])
+        def handle():
+            if request.method == "GET":
+                return "Aggregator server"
+            elif request.method == "POST":
+                j = request.get_json()
+
+                self.storeData(j["outputs"])
+                return "OK"
+
+    def storeData(self,data):
+        if(self.representation == "EncoderHiddenLayer"):
+            lstm = numpy.array(data[0]);
+            s = representation.Dataset.Sentence(lstm)
+            s.words = []
+            for i in range(len(lstm)):
+                s.words.append("UNK")
+            self.data.sentences.append(s)

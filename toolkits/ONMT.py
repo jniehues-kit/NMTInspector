@@ -4,11 +4,11 @@ import sys
 import argparse
 
 import torch
-from torch.autograd import Variable
 
-from onmt.translate.Translator import make_translator
+from onmt.translate.translator import build_translator
 import onmt.opts
-import onmt.translate.Translator
+import onmt.translate.translator
+import onmt.inputters as inputters
 
 import representation.Dataset
 
@@ -17,23 +17,7 @@ class InpsectTranslator(onmt.translate.Translator):
     def init_representation(self,label):
         self.rep = representation.Dataset.Dataset(label)
 
-        
-    def translate_batch(self, batch, data):
-        """
-        Copied from OpenNMT -> only change is that we store the hidden representations
-        Translate a batch of sentences.
-
-        Mostly a wrapper around :obj:`Beam`.
-
-        Args:
-           batch (:obj:`Batch`): a batch from a dataset object
-           data (:obj:`Dataset`): the dataset object
-
-
-        Todo:
-           Shouldn't need the original dataset.
-        """
-
+    def _translate_batch(self, batch, data):
         # (0) Prep each of the components of the search.
         # And helper method for reducing verbosity.
         beam_size = self.beam_size
@@ -49,9 +33,9 @@ class InpsectTranslator(onmt.translate.Translator):
         beam = [onmt.translate.Beam(beam_size, n_best=self.n_best,
                                     cuda=self.cuda,
                                     global_scorer=self.global_scorer,
-                                    pad=vocab.stoi[onmt.io.PAD_WORD],
-                                    eos=vocab.stoi[onmt.io.EOS_WORD],
-                                    bos=vocab.stoi[onmt.io.BOS_WORD],
+                                    pad=vocab.stoi[inputters.PAD_WORD],
+                                    eos=vocab.stoi[inputters.EOS_WORD],
+                                    bos=vocab.stoi[inputters.BOS_WORD],
                                     min_length=self.min_length,
                                     stepwise_penalty=self.stepwise_penalty,
                                     block_ngram_repeat=self.block_ngram_repeat,
@@ -59,7 +43,7 @@ class InpsectTranslator(onmt.translate.Translator):
                 for __ in range(batch_size)]
 
         # Help functions for working with beams and batches
-        def var(a): return Variable(a, volatile=True)
+        def var(a): return torch.tensor(a, requires_grad=False)
 
         def rvar(a): return var(a.repeat(1, beam_size, 1))
 
@@ -70,28 +54,26 @@ class InpsectTranslator(onmt.translate.Translator):
             return m.view(beam_size, batch_size, -1)
 
         # (1) Run the encoder on the src.
-
-        src = onmt.io.make_features(batch, 'src', data_type)
+        src = inputters.make_features(batch, 'src', data_type)
         src_lengths = None
         if data_type == 'text':
             _, src_lengths = batch.src
 
         enc_states, memory_bank = self.model.encoder(src, src_lengths)
         for i in range(memory_bank.size(1)):
-            if(memory_bank.select(1,i).narrow(0,0,batch.src[1][i]).data.is_cuda):
-                s = representation.Dataset.Sentence(memory_bank.select(1,i).narrow(0,0,batch.src[1][i]).data.cpu().numpy())
+            if (memory_bank.select(1, i).narrow(0, 0, batch.src[1][i]).data.is_cuda):
+                s = representation.Dataset.Sentence(
+                    memory_bank.select(1, i).narrow(0, 0, batch.src[1][i]).data.cpu().numpy())
             else:
-                s = representation.Dataset.Sentence(memory_bank.select(1,i).narrow(0,0,batch.src[1][i]).data.numpy())
-                
+                s = representation.Dataset.Sentence(memory_bank.select(1, i).narrow(0, 0, batch.src[1][i]).data.numpy())
+
             words = []
             for j in range(batch.src[1][i]):
-                
                 words.append(self.fields["src"].vocab.itos[batch.src[0].data[j][i]])
             s.words = words;
-            while(len(self.rep.sentences) <= batch.indices.data[i]):
+            while (len(self.rep.sentences) <= batch.indices.data[i]):
                 self.rep.sentences.append(None)
             self.rep.sentences[batch.indices.data[i]] = s
-
         dec_states = self.model.decoder.init_decoder_state(
             src, memory_bank, enc_states)
 
@@ -129,8 +111,11 @@ class InpsectTranslator(onmt.translate.Translator):
 
             # Run one step.
             dec_out, dec_states, attn = self.model.decoder(
-                inp, memory_bank, dec_states, memory_lengths=memory_lengths)
+                inp, memory_bank, dec_states, memory_lengths=memory_lengths,
+                step=i)
+
             dec_out = dec_out.squeeze(0)
+
             # dec_out: beam x rnn_size
 
             # (b) Compute a vector of batch x beam word scores.
@@ -150,6 +135,7 @@ class InpsectTranslator(onmt.translate.Translator):
                 # beam x tgt_vocab
                 out = out.log()
                 beam_attn = unbottle(attn["copy"])
+
             # (c) Advance each beam.
             for j, b in enumerate(beam):
                 b.advance(out[:, j],
@@ -162,8 +148,8 @@ class InpsectTranslator(onmt.translate.Translator):
         if "tgt" in batch.__dict__:
             ret["gold_score"] = self._run_target(batch, data)
         ret["batch"] = batch
-        return ret
 
+        return ret
 
 class ONMTGenerator:
 
@@ -183,12 +169,16 @@ class ONMTGenerator:
         else:
             self.opt = dummy_parser.parse_known_args(["-model",self.model,"-src",self.src])[0]            
         
-        self.translator = make_translator(self.opt)
+        self.translator = build_translator(self.opt)
         self.translator.__class__ = InpsectTranslator
         self.translator.init_representation("testdata")
         
     def generate(self):
-        self.translator.translate(self.opt.src_dir,self.opt.src,self.opt.tgt,self.opt.batch_size,self.opt.attn_debug)
+        self.translator.translate(src_path=self.opt.src,
+                             tgt_path=self.opt.tgt,
+                             src_dir=self.opt.src_dir,
+                             batch_size=self.opt.batch_size,
+                             attn_debug=self.opt.attn_debug)
         return self.translator.rep
 
 
