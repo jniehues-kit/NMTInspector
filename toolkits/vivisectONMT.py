@@ -17,28 +17,42 @@ import numpy
 
 class ONMTGenerator:
 
-    def __init__(self, model, src, representation, gpuid):
+    def __init__(self, model, src,tgt,  representation, gpuid):
         self.model = model;
         self.representation = representation
         self.src = src
+        self.tgt = tgt;
         self.gpuid = gpuid
         self.port = 8882
 
         dummy_parser = argparse.ArgumentParser(description='train.py')
         onmt.opts.model_opts(dummy_parser)
         onmt.opts.translate_opts(dummy_parser)
+        param = ["-model", self.model, "-src", self.src]
+
         if (gpuid != ""):
-            self.opt = dummy_parser.parse_known_args(["-model", self.model, "-src", self.src, "-gpu", self.gpuid])[0]
-        else:
-            self.opt = dummy_parser.parse_known_args(["-model", self.model, "-src", self.src])[0]
+            param += ["-gpu", self.gpuid]
+        if (self.tgt != ""):
+            param += ["-tgt",self.tgt]
+
+        self.opt = dummy_parser.parse_known_args(param)[0]
 
         self.translator = build_translator(self.opt)
 
-        self.translator.model.encoder._vivisect = {"iteration": 0, "model_name": "OpenNMT", "framework": "pytorch"}
 
 
-        if(self.representation == "EncoderWordEmbeddings" or self.represenation == "EncoderHiddenLayer"):
-            probe(self.translator.model.encoder, "localhost", self.port, self.monitorONMT, performONMT)
+        if(self.representation == "EncoderWordEmbeddings" or self.representation == "EncoderHiddenLayer"):
+            self.translator.model.encoder._vivisect = {"iteration":0, "rescore": 1, "model_name": "OpenNMT", "framework": "pytorch"}
+            probe(self.translator.model.encoder, "localhost", self.port, self.monitorONMT, self.performONMT)
+        elif(self.representation == "ContextVector" or self.representation == "DecoderWordEmbeddings" or self.representation == "DecoderHiddenLayer"):
+            #need to use the encoder to see when a sentence start
+            self.translator.model.decoder._vivisect = {"iteration":0, "sentence": 0, "model_name": "OpenNMT", "framework": "pytorch"}
+            probe(self.translator.model.decoder, "localhost", self.port, self.monitorONMT, self.performONMT)
+            self.translator.model.encoder._vivisect = {"iteration":0, "rescore": 1, "model_name": "OpenNMT", "framework": "pytorch"}
+            probe(self.translator.model.encoder, "localhost", self.port, self.monitorONMT, self.performONMT)
+        else:
+            print("Unkown representation:",self.representation)
+
 
 
         self.collector = Collector(self.representation);
@@ -55,6 +69,7 @@ class ONMTGenerator:
                              batch_size=1,
                              attn_debug=self.opt.attn_debug)
         clear("localhost", self.port)
+        print(len(self.collector.data.sentences))
         return self.collector.data
 
     def monitorONMT(self,layer):
@@ -62,18 +77,44 @@ class ONMTGenerator:
             return True
         elif (type(layer).__name__ == "Embeddings" and self.representation == "EncoderWordEmbeddings"):
             return True
+        elif (type(layer).__name__ == "GlobalAttention" and self.representation == "ContextVector"):
+            return True
+        elif (type(layer).__name__ == "StackedLSTM" and self.representation == "DecoderHiddenLayer"):
+            return True
+        elif (type(layer).__name__ == "Embeddings" and self.representation == "DecoderWordEmbeddings"):
+            return True
+        elif (type(layer).__name__ == "LSTM" and (self.representation == "ContextVector" or
+        self.representation == "DecoderHiddenLayer")):
+            return True
         return False
 
-def performONMT(model, op, inputs, outputs):
-    return True
+    def performONMT(self,model, op, inputs, outputs):
+        if type(model).__name__ == "RNNEncoder":
+            self.translator.model.encoder._vivisect["rescore"] = 1 - self.translator.model.encoder._vivisect["rescore"]
+            if(self.representation == "EncoderHiddenLayer" or self.representation == "EncoderWordEmbeddings"):
+                if(self.tgt != ""):
+                    #if target is given it will do rescoring and translation -> only use every second
+                    return self.translator.model.encoder._vivisect["rescore"] == 1
+                else:
+                    return True
+            if(self.representation == "ContextVector" or self.representation == "DecoderWordEmbeddings" or
+                    self.representation == "DecoderHiddenLayer"):
+                if self.translator.model.encoder._vivisect["rescore"] == 1:
+                    #need to know which sentence ends
+                    self.translator.model.decoder._vivisect["sentence"] += 1
+                return False
+        elif type(model).__name__ == "InputFeedRNNDecoder":
+            # if target is given it will do rescoring and translation -> only use every second
+            return self.translator.model.encoder._vivisect["rescore"] == 1
+
 
 def startCollector(collector,port):
     collector.run(port=port,debug=False)
 
 
 
-def generate(source_test_data, model, representation, gpuid):
-    g = ONMTGenerator(model, source_test_data, representation, gpuid)
+def generate(source_test_data, target_test_data, model, representation, gpuid):
+    g = ONMTGenerator(model, source_test_data, target_test_data, representation, gpuid)
     return g.generate()
 
 
@@ -103,10 +144,10 @@ class Collector(Flask):
             elif request.method == "POST":
                 j = request.get_json()
 
-                self.storeData(j["outputs"])
+                self.storeData(j["outputs"],j["metadata"])
                 return "OK"
 
-    def storeData(self,data):
+    def storeData(self,data,meta):
         if(self.representation == "EncoderHiddenLayer"):
             lstm = numpy.array(data[0]);
             s = representation.Dataset.Sentence(lstm)
@@ -121,3 +162,27 @@ class Collector(Flask):
             for i in range(len(emb)):
                 s.words.append("UNK")
             self.data.sentences.append(s)
+        elif(self.representation == "ContextVector"):
+            cv = numpy.array(data[0]).squeeze()
+            if(meta["sentence"] != len(self.data.sentences)):
+                e = numpy.array([])
+                e.resize(0,cv.shape[0])
+                self.data.sentences.append(representation.Dataset.Sentence(e))
+                self.data.sentences[-1].words = []
+            self.data.sentences[-1].addWord(cv,"UNK")
+
+        elif(self.representation == "DecoderWordEmbeddings"):
+            emb = numpy.array(data).squeeze()
+            s = representation.Dataset.Sentence(emb)
+            s.words = []
+            for i in range(len(emb)):
+                s.words.append("UNK")
+            self.data.sentences.append(s)
+        elif(self.representation == "DecoderHiddenLayer"):
+            cv = numpy.array(data[0]).squeeze()
+            if(meta["sentence"] != len(self.data.sentences)):
+                e = numpy.array([])
+                e.resize(0,cv.shape[0])
+                self.data.sentences.append(representation.Dataset.Sentence(e))
+                self.data.sentences[-1].words = []
+            self.data.sentences[-1].addWord(cv,"UNK")

@@ -46,11 +46,15 @@ def main():
                         Sentence: One label per word ( take sum of word representations )""")
 
     parser.add_argument('-representation', type=str, default="EncoderWordEmbeddings",
-                        choices=['EncoderWordEmbeddings','EncoderHiddenLayer'],
+                        choices=['EncoderWordEmbeddings','EncoderHiddenLayer','ContextVector','DecoderWordEmbeddings',
+                                 'DecoderHiddenLayer'],
                         help="""EncoderWordEmbeddings""")
     
     parser.add_argument('-source_test_data', type=str, default="",
                         help="""Path to the input data""")
+
+    parser.add_argument('-target_test_data', type=str, default="",
+                        help="""Path to the target data""")
 
     parser.add_argument('-model', type=str, default="",
                         help="""Model that should be analyzed""")
@@ -93,7 +97,7 @@ def main():
         elif(opt.model_type == "OpenNMT"):
             data = toolkits.ONMT.generate(opt.source_test_data,opt.model,opt.representation,opt.gpuid)
         elif (opt.model_type == "vivisectONMT"):
-            data = toolkits.vivisectONMT.generate(opt.source_test_data, opt.model, opt.representation, opt.gpuid)
+            data = toolkits.vivisectONMT.generate(opt.source_test_data, opt.target_test_data, opt.model, opt.representation, opt.gpuid)
         else:
             logging.error("Unknown model type:",opt.model_type)
             exit(-1)
@@ -103,6 +107,10 @@ def main():
     else:
         logging.error("Neither testdata with model nor hidden representation given")
         exit(-1)
+
+    #print("Number of sentences:",len(data.sentences))
+    #for i in range(len(data.sentences)):
+    #    print(data.sentences[i].data.shape)
 
     #annote hidden representation with labels
     if(opt.prediction_task == "BPE"):
