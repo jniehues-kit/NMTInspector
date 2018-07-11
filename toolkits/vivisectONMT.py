@@ -14,6 +14,7 @@ import representation.Dataset
 from flask import Flask, request
 
 import numpy
+import sys
 
 class ONMTGenerator:
 
@@ -42,7 +43,7 @@ class ONMTGenerator:
 
 
         if(self.representation == "EncoderWordEmbeddings" or self.representation == "EncoderHiddenLayer"):
-            self.translator.model.encoder._vivisect = {"iteration":0, "rescore": 1, "model_name": "OpenNMT", "framework": "pytorch"}
+            self.translator.model.encoder._vivisect = {"iteration":0, "rescore": 1, "sentence": 0,"model_name": "OpenNMT", "framework": "pytorch"}
             probe(self.translator.model.encoder, "localhost", self.port, self.monitorONMT, self.performONMT)
         elif(self.representation == "ContextVector" or self.representation == "DecoderWordEmbeddings" or self.representation == "DecoderHiddenLayer"):
             #need to use the encoder to see when a sentence start
@@ -93,6 +94,10 @@ class ONMTGenerator:
             self.translator.model.encoder._vivisect["rescore"] = 1 - self.translator.model.encoder._vivisect["rescore"]
             if(self.representation == "EncoderHiddenLayer" or self.representation == "EncoderWordEmbeddings"):
                 if(self.tgt != ""):
+                    if self.translator.model.encoder._vivisect["rescore"] == 1:
+                        self.translator.model.encoder._vivisect["sentence"] += 1
+                        if(self.translator.model.encoder._vivisect["sentence"] % 10 == 0):
+                            print("Starting sentences: ",self.translator.model.encoder._vivisect["sentence"],file=sys.stderr)
                     #if target is given it will do rescoring and translation -> only use every second
                     return self.translator.model.encoder._vivisect["rescore"] == 1
                 else:
@@ -102,6 +107,8 @@ class ONMTGenerator:
                 if self.translator.model.encoder._vivisect["rescore"] == 1:
                     #need to know which sentence ends
                     self.translator.model.decoder._vivisect["sentence"] += 1
+                    if(self.translator.model.decoder._vivisect["sentence"] % 10 == 0):
+                        print("Starting sentences: ",self.translator.model.decoder._vivisect["sentence"],file=sys.stderr)
                 return False
         elif type(model).__name__ == "InputFeedRNNDecoder":
             # if target is given it will do rescoring and translation -> only use every second
