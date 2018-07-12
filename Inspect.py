@@ -5,6 +5,7 @@ import sys
 
 import toolkits.ONMT
 import toolkits.vivisectONMT
+import toolkits.vivisectSockeye
 import argparse
 import logging
 #import representation.DataSet
@@ -28,7 +29,7 @@ def main():
                         help="""Predicition task to be used to analyse the hidden representations""")
 
     parser.add_argument('-ml_technique', type=str, default="intrinsic",
-                        choices=['intrinsic','classifier','squeuncePrediction','unsupervised'],
+                        choices=['intrinsic','classifier','squeuncePrediction','unsupervised','none'],
                         help="""Technique used to analse the hidden representations""")
 
     parser.add_argument('-inspection_model', type=str, default="",
@@ -60,7 +61,7 @@ def main():
                         help="""Model that should be analyzed""")
 
     parser.add_argument('-model_type', type=str, default="",
-                        choices=['OpenNMT','vivisectONMT'],
+                        choices=['OpenNMT','vivisectONMT','vivisectSockeye'],
                         help="""Framework used to train the model""")
 
 
@@ -68,7 +69,7 @@ def main():
                         help="""JSON File containing hidden representation from previous run""")
 
     parser.add_argument('-hidden_representation_out', type=str, default="",
-                        help="""JSON File to store the hidden representation""")
+                        help="""CSV File to store the hidden representation""")
 
     parser.add_argument('-label_file', type=str, default="",
                         help="""Label File""")
@@ -98,6 +99,9 @@ def main():
             data = toolkits.ONMT.generate(opt.source_test_data,opt.model,opt.representation,opt.gpuid)
         elif (opt.model_type == "vivisectONMT"):
             data = toolkits.vivisectONMT.generate(opt.source_test_data, opt.target_test_data, opt.model, opt.representation, opt.gpuid)
+        elif (opt.model_type == "vivisectSockeye"):
+            data = toolkits.vivisectSockeye.generate(opt.source_test_data, opt.target_test_data, opt.model,
+                                                  opt.representation, opt.gpuid)
         else:
             logging.error("Unknown model type:",opt.model_type)
             exit(-1)
@@ -119,7 +123,12 @@ def main():
         annotator.SentenceLabels.annotate(data,opt.label_file)
 
     ## save hidden representation if necessry
-    #if(opt.hidden_representation_out != ""):
+    if(opt.hidden_representation_out != ""):
+        f = open(opt.hidden_representation_out,'w')
+        for i in range(len(data.sentences)):
+            for j in range(len(data.sentences[i].words)):
+                print("S"+str(i)+"T"+str(j),",".join([str(f) for f in data.sentences[i].data[j].tolist()]),file=f)
+        f.close()
         
 
     #inpsect hidden representation
