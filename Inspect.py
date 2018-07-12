@@ -10,6 +10,8 @@ import argparse
 import logging
 #import representation.DataSet
 import annotator.BPE
+import annotator.SentenceLabels
+import annotator.TokenLabels
 import inspector.Intrinsic
 import inspector.Classifier
 import json
@@ -25,7 +27,7 @@ def main():
     
     
     parser.add_argument('-prediction_task', type=str,default="",
-                        choices=['BPE','SentenceLabels'],
+                        choices=['BPE','SentenceLabels','TokenLabels'],
                         help="""Predicition task to be used to analyse the hidden representations""")
 
     parser.add_argument('-ml_technique', type=str, default="intrinsic",
@@ -121,6 +123,8 @@ def main():
         annotator.BPE.annotate(data);
     elif(opt.prediction_task == "SentenceLabels"):
         annotator.SentenceLabels.annotate(data,opt.label_file)
+    elif(opt.prediction_task == "TokenLabels"):
+        annotator.TokenLabels.annotate(data,opt.label_file)
 
     ## save hidden representation if necessry
     if(opt.hidden_representation_out != ""):
