@@ -20,6 +20,8 @@ class TokenLabels:
             labels = line.strip().split()
             if(len(labels) != len(self.data.sentences[i].words)):
                 print ("Not enough labels in line")
+                print("Sentence:", i, "Length of tokens: ",len(labels)," Length hidden: ",len(self.data.sentences[i].words))
+                exit(-1)
             self.data.sentences[i].labels = labels
             line = f.readline().strip()
 

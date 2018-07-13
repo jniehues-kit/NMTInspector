@@ -116,7 +116,8 @@ class ONMTGenerator:
                 s.words.append("UNK")
             self.data.sentences.append(s)
         elif(self.representation == "EncoderWordEmbeddings"):
-            emb = numpy.array(data).squeeze()
+            emb = numpy.array(data)
+            emb = emb.reshape((emb.shape[1],emb.shape[3]))
             s = representation.Dataset.Sentence(emb)
             s.words = []
             for i in range(len(emb)):
