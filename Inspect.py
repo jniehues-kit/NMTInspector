@@ -14,6 +14,7 @@ import annotator.SentenceLabels
 import annotator.TokenLabels
 import inspector.Intrinsic
 import inspector.Classifier
+import inspector.Predictor
 import json
 
 
@@ -31,7 +32,7 @@ def main():
                         help="""Predicition task to be used to analyse the hidden representations""")
 
     parser.add_argument('-ml_technique', type=str, default="intrinsic",
-                        choices=['intrinsic','classifier','squeuncePrediction','unsupervised','none'],
+                        choices=['intrinsic','classifier','predictor','squeuncePrediction','unsupervised','none'],
                         help="""Technique used to analse the hidden representations""")
 
     parser.add_argument('-inspection_model', type=str, default="",
@@ -51,8 +52,14 @@ def main():
     parser.add_argument('-representation', type=str, default="EncoderWordEmbeddings",
                         choices=['EncoderWordEmbeddings','EncoderHiddenLayer','ContextVector','DecoderWordEmbeddings',
                                  'DecoderHiddenLayer'],
-                        help="""EncoderWordEmbeddings""")
-    
+                        help="""Representation should be analysed""")
+    parser.add_argument('-label_representation', type=str, default="",
+                        choices=['','EncoderWordEmbeddings','EncoderHiddenLayer','ContextVector','DecoderWordEmbeddings',
+                                 'DecoderHiddenLayer'],
+                        help="""Representation should be predicted""")
+
+
+
     parser.add_argument('-source_test_data', type=str, default="",
                         help="""Path to the input data""")
 
@@ -100,10 +107,11 @@ def main():
         elif(opt.model_type == "OpenNMT"):
             data = toolkits.ONMT.generate(opt.source_test_data,opt.model,opt.representation,opt.gpuid)
         elif (opt.model_type == "vivisectONMT"):
-            data = toolkits.vivisectONMT.generate(opt.source_test_data, opt.target_test_data, opt.model, opt.representation, opt.gpuid)
+            data = toolkits.vivisectONMT.generate(opt.source_test_data, opt.target_test_data, opt.model,
+                                                  opt.representation, opt.label_representation,opt.gpuid)
         elif (opt.model_type == "vivisectSockeye"):
             data = toolkits.vivisectSockeye.generate(opt.source_test_data, opt.target_test_data, opt.model,
-                                                  opt.representation, opt.gpuid)
+                                                  opt.representation, opt.label_representation, opt.gpuid)
         else:
             logging.error("Unknown model type:",opt.model_type)
             exit(-1)
@@ -140,6 +148,12 @@ def main():
         result = inspector.Intrinsic.inspect(data)
     elif(opt.ml_technique == "classifier"):
         result = inspector.Classifier.inspect(data,opt.inspection_model,
+                                              opt.load_inspection_model,
+                                              opt.store_inspection_model,
+                                              opt.inspection_model_input,
+                                              opt.output_predictions);
+    elif(opt.ml_technique == "predictor"):
+        result = inspector.Predictor.inspect(data,opt.inspection_model,
                                               opt.load_inspection_model,
                                               opt.store_inspection_model,
                                               opt.inspection_model_input,

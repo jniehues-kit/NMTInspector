@@ -15,9 +15,10 @@ import sys
 
 class ONMTGenerator:
 
-    def __init__(self, model, src,tgt,  rep, gpuid):
+    def __init__(self, model, src,tgt,  rep, label_rep, gpuid):
         self.model = model;
         self.representation = rep
+        self.label_representation = label_rep
         self.src = src
         self.tgt = tgt;
         self.gpuid = gpuid
@@ -36,7 +37,8 @@ class ONMTGenerator:
 
         self.translator = build_translator(self.opt)
         self.data = representation.Dataset.Dataset("testdata")
-
+        if(self.label_representation != ""):
+            self.data.target_representation = []
 
 
         if(self.representation == "EncoderWordEmbeddings" or self.representation == "EncoderHiddenLayer"):
@@ -65,7 +67,8 @@ class ONMTGenerator:
         return self.data
 
     def monitorONMT(self,layer):
-        if(type(layer).__name__ == "LSTM" and self.representation == "EncoderHiddenLayer"):
+        if(type(layer).__name__ == "LSTM" and (self.representation == "EncoderHiddenLayer"
+                                               or self.label_representation == "EncoderHiddenLayer")):
             return True
         elif (type(layer).__name__ == "Embeddings" and self.representation == "EncoderWordEmbeddings"):
             return True
@@ -82,6 +85,12 @@ class ONMTGenerator:
 
     def performONMT(self,model, op, inputs, outputs):
         if type(model).__name__ == "RNNEncoder":
+            if(self.label_representation == "EncoderHiddenLayer" and type(op).__name__ == "LSTM"):
+                #do not count this; this is only for the labels
+                if (self.tgt != ""):
+                    return self.translator.model.encoder._vivisect["rescore"] == 1
+                else:
+                    return True
             self.translator.model.encoder._vivisect["rescore"] = 1 - self.translator.model.encoder._vivisect["rescore"]
             if(self.representation == "EncoderHiddenLayer" or self.representation == "EncoderWordEmbeddings"):
                 if(self.tgt != ""):
@@ -115,7 +124,11 @@ class ONMTGenerator:
             for i in range(len(lstm)):
                 s.words.append("UNK")
             self.data.sentences.append(s)
-        elif(self.representation == "EncoderWordEmbeddings"):
+        elif(self.label_representation == "EncoderHiddenLayer" and meta["name"] == "rnn"):
+            lstm = numpy.array(data[0]);
+            s = representation.Dataset.Sentence(lstm)
+            self.data.target_representation.append(s)
+        elif(self.representation == "EncoderWordEmbeddings" and meta["name"] == "embeddings"):
             emb = numpy.array(data)
             emb = emb.reshape((emb.shape[1],emb.shape[3]))
             s = representation.Dataset.Sentence(emb)
@@ -151,8 +164,8 @@ class ONMTGenerator:
 
 
 
-def generate(source_test_data, target_test_data, model, representation, gpuid):
-    g = ONMTGenerator(model, source_test_data, target_test_data, representation, gpuid)
+def generate(source_test_data, target_test_data, model, representation, label_representation,gpuid):
+    g = ONMTGenerator(model, source_test_data, target_test_data, representation, label_representation,gpuid)
     return g.generate()
 
 

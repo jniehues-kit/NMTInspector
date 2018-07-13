@@ -193,7 +193,7 @@ class SockeyeGenerator:
 
 
 
-def generate(source_test_data, target_test_data, model, representation, gpuid):
+def generate(source_test_data, target_test_data, model, representation, label_representation, gpuid):
     g = SockeyeGenerator(model, source_test_data, target_test_data, representation, gpuid)
     return g.generate()
 
