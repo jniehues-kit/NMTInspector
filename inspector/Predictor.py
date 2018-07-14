@@ -20,8 +20,6 @@ class Predictor:
         self.load_model = load_model
         self.store_model = store_model
         self.input_type = input_type
-        self.mapping = {}
-        self.labels = []
         self.output = output
 
     def inspect(self):
