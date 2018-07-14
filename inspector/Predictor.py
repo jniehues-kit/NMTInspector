@@ -95,7 +95,7 @@ class Predictor:
 
             # forward + backward + optimize
             outputs = self.model(inputs.double())
-            loss = inputs.double()-outputs
+            loss = labels.double()-outputs
             loss = loss.mul(loss)
             loss = loss.sum(1)
             all += loss.sum().item()
