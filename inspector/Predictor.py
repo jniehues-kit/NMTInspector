@@ -88,6 +88,7 @@ class Predictor:
 
         all = 0;
         count = 0
+        relative = 0;
 
         for i, data in enumerate(self.trainloader, 0):
             # get the inputs
@@ -98,13 +99,16 @@ class Predictor:
             loss = labels.double()-outputs
             loss = loss.mul(loss)
             loss = loss.sum(1)
+            length = outputs.mul(outputs).sum(1)
             all += loss.sum().item()
+            relative += (100*loss/length).sum().item()
             count += loss.shape[0]
             if (self.output):
                 for i in range(loss.shape[0]):
-                    print("Distance: ", loss[i].item())
+                    print("Distance: ", loss[i].item(), "Length: ",length[i].item(),"Relativ distance: ",100*loss[i].item()/length[i].item())
 
         print(" Distance: ", all, " Avg distance: ", 1.0 * all / count)
+        print(" rel. Distance: ", relative, " Avg rel distance: ", 1.0 * relative / count)
 
     def train(self):
 
