@@ -5,7 +5,11 @@ import sys
 
 import toolkits.ONMT
 import toolkits.vivisectONMT
-import toolkits.vivisectSockeye
+try:
+    import toolkits.vivisectSockeye
+    use_sockeye = True
+except ImportError:
+    use_sockeye = False
 import argparse
 import logging
 #import representation.DataSet
@@ -110,8 +114,11 @@ def main():
             data = toolkits.vivisectONMT.generate(opt.source_test_data, opt.target_test_data, opt.model,
                                                   opt.representation, opt.label_representation,opt.gpuid)
         elif (opt.model_type == "vivisectSockeye"):
-            data = toolkits.vivisectSockeye.generate(opt.source_test_data, opt.target_test_data, opt.model,
+            if(use_sockeye)
+                data = toolkits.vivisectSockeye.generate(opt.source_test_data, opt.target_test_data, opt.model,
                                                   opt.representation, opt.label_representation, opt.gpuid)
+            else:
+                print("Sockeye is not available")
         else:
             logging.error("Unknown model type:",opt.model_type)
             exit(-1)

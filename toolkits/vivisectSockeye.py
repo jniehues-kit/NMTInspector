@@ -108,7 +108,7 @@ class SockeyeGenerator:
                        output_handler=self.output_handler,
                        chunk_size=None,
                        input_file=self.src,
-                       target_file=self.tgt,
+                       target_file=None,
                        input_factors=None,
                        input_is_json=False)
         return self.data

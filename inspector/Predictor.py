@@ -81,7 +81,7 @@ class Predictor:
         self.inputSize = self.data.sentences[0].data[0].size
         self.outputSize = self.data.target_representation[0].data[0].size
         self.model = nn.Sequential(nn.Linear(self.inputSize, self.outputSize))
-        self.criterion = nn.MSELoss()
+        self.criterion = nn.MSELoss(size_average=False)
         self.optimizer = optim.Adam(self.model.parameters(), lr=0.0001)
 
     def predict(self):
