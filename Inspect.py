@@ -114,7 +114,7 @@ def main():
             data = toolkits.vivisectONMT.generate(opt.source_test_data, opt.target_test_data, opt.model,
                                                   opt.representation, opt.label_representation,opt.gpuid)
         elif (opt.model_type == "vivisectSockeye"):
-            if(use_sockeye)
+            if(use_sockeye):
                 data = toolkits.vivisectSockeye.generate(opt.source_test_data, opt.target_test_data, opt.model,
                                                   opt.representation, opt.label_representation, opt.gpuid)
             else:
