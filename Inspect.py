@@ -55,7 +55,6 @@ def main():
                         Sentence: One label per word ( take sum of word representations )""")
 
     parser.add_argument('-inspection_model_param', type=str, default="",
-                        choices=['word','sentence'],
                         help="""Parameter for the inspection model""")
 
     parser.add_argument('-representation', type=str, default="EncoderWordEmbeddings",

@@ -91,7 +91,7 @@ class Autoencoder:
 
         for i, data in enumerate(self.trainloader, 0):
             # get the inputs
-            inputs, labels = data
+            inputs = data[0]
 
             # forward + backward + optimize
             outputs = self.model(inputs.double())
@@ -116,7 +116,7 @@ class Autoencoder:
             running_loss = 0.0
             for i, data in enumerate(self.trainloader, 0):
                 # get the inputs
-                inputs, labels = data
+                inputs = data[0]
 
                 # zero the parameter gradients
                 self.optimizer.zero_grad()
