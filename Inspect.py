@@ -19,6 +19,7 @@ import annotator.TokenLabels
 import inspector.Intrinsic
 import inspector.Classifier
 import inspector.Predictor
+import inspector.Autoencoder
 import json
 
 
@@ -36,7 +37,7 @@ def main():
                         help="""Predicition task to be used to analyse the hidden representations""")
 
     parser.add_argument('-ml_technique', type=str, default="intrinsic",
-                        choices=['intrinsic','classifier','predictor','squeuncePrediction','unsupervised','none'],
+                        choices=['intrinsic','classifier','predictor','autoencoder','none'],
                         help="""Technique used to analse the hidden representations""")
 
     parser.add_argument('-inspection_model', type=str, default="",
@@ -52,6 +53,10 @@ def main():
                         help="""Use inspection model to predict:\n
                         Word: One label per word\n
                         Sentence: One label per word ( take sum of word representations )""")
+
+    parser.add_argument('-inspection_model_param', type=str, default="",
+                        choices=['word','sentence'],
+                        help="""Parameter for the inspection model""")
 
     parser.add_argument('-representation', type=str, default="EncoderWordEmbeddings",
                         choices=['EncoderWordEmbeddings','EncoderHiddenLayer','ContextVector','DecoderWordEmbeddings',
@@ -165,6 +170,12 @@ def main():
                                               opt.store_inspection_model,
                                               opt.inspection_model_input,
                                               opt.output_predictions);
+    elif(opt.ml_technique == "autoencoder"):
+        result = inspector.Autoencoder.inspect(data,opt.inspection_model,
+                                              opt.load_inspection_model,
+                                              opt.store_inspection_model,
+                                              opt.inspection_model_input,
+                                              opt.output_predictions,opt.inspection_model_param);
 
 
     #store result if necessay
