@@ -33,7 +33,7 @@ def main():
     
     
     parser.add_argument('-prediction_task', type=str,default="",
-                        choices=['BPE','SentenceLabels','TokenLabels'],
+                        choices=['BPE','SentenceLabels','TokenLabels',''],
                         help="""Predicition task to be used to analyse the hidden representations""")
 
     parser.add_argument('-ml_technique', type=str, default="intrinsic",

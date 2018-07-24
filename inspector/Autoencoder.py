@@ -21,7 +21,7 @@ class Autoencoder:
         self.store_model = store_model
         self.input_type = input_type
         self.output = output
-        self.hiddenSize = int(hiddenSize)
+        self.hiddenSize = [int(h) for h in hiddenSize.split(";")]
 
     def inspect(self):
 
@@ -43,11 +43,23 @@ class Autoencoder:
     def load(self):
         param = dd.io.load(self.model_file + ".paramter.h5")
         self.inputSize = param['inputSize'].item()
-        self.hiddenSize = param['hiddenSize'].item()
-        self.model = nn.Sequential(nn.Linear(self.inputSize, self.hiddenSize),
-                                   nn.Sigmoid(),
-                                   nn.Linear(self.hiddenSize,self.inputSize),
-                                   nn.Sigmoid())
+        self.hiddenSize = [int(h) for h in param['hiddenSize']]
+
+        layers = []
+        last=self.inputSize
+        for h in self.hiddenSize:
+            layers.append(nn.Linear(last, h))
+            layers.append(nn.Sigmoid())
+            last=h
+        for i in range(len(self.hiddenSize)):
+            if(i < len(self.hiddenSize) -1):
+                layers.append(nn.Linear(self.hiddenSize[-i - 1], self.hiddenSize[-i - 2]))
+            else:
+                layers.append(nn.Linear(self.hiddenSize[-i - 1], self.inputSize))
+            layers.append(nn.Sigmoid())
+
+        self.model = nn.Sequential(*layers)
+        print(self.model)
         self.model.load_state_dict(torch.load(self.model_file + ".model"))
 
 
@@ -76,10 +88,21 @@ class Autoencoder:
 
     def buildModel(self):
         self.inputSize = self.data.sentences[0].data[0].size
-        self.model = nn.Sequential(nn.Linear(self.inputSize, self.hiddenSize),
-                                   nn.Sigmoid(),
-                                   nn.Linear(self.hiddenSize,self.inputSize),
-                                   nn.Sigmoid())
+        layers = []
+        last=self.inputSize
+        for h in self.hiddenSize:
+            layers.append(nn.Linear(last, h))
+            layers.append(nn.Sigmoid())
+            last=h
+        for i in range(len(self.hiddenSize)):
+            if(i < len(self.hiddenSize) -1):
+                layers.append(nn.Linear(self.hiddenSize[-i-1], self.hiddenSize[-i-2]))
+            else:
+                layers.append(nn.Linear(self.hiddenSize[-i-1], self.inputSize))
+            layers.append(nn.Sigmoid())
+
+        self.model = nn.Sequential(*layers)
+        print(self.model)
         self.criterion = nn.MSELoss(size_average=False)
         self.optimizer = optim.Adam(self.model.parameters(), lr=0.0001)
 

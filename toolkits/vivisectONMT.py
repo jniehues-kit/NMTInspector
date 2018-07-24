@@ -74,7 +74,8 @@ class ONMTGenerator:
             return True
         elif (type(layer).__name__ == "GlobalAttention" and self.representation == "ContextVector"):
             return True
-        elif (type(layer).__name__ == "StackedLSTM" and self.representation == "DecoderHiddenLayer"):
+        elif (type(layer).__name__ == "StackedLSTM" and (self.representation == "DecoderHiddenLayer"
+                                                            or self.label_representation == "DecoderHiddenLayer")):
             return True
         elif (type(layer).__name__ == "Embeddings" and self.representation == "DecoderWordEmbeddings"):
             return True
@@ -117,6 +118,7 @@ class ONMTGenerator:
     def storeData(self,context):
         data = context["outputs"]
         meta = context["metadata"]
+
         if(self.representation == "EncoderHiddenLayer"):
             lstm = numpy.array(data[0]);
             s = representation.Dataset.Sentence(lstm)
@@ -145,7 +147,7 @@ class ONMTGenerator:
                 self.data.sentences[-1].words = []
             self.data.sentences[-1].addWord(cv,"UNK")
 
-        elif(self.representation == "DecoderWordEmbeddings"):
+        elif(self.representation == "DecoderWordEmbeddings" and meta["name"] == "embeddings"):
             emb = numpy.array(data).squeeze()
             s = representation.Dataset.Sentence(emb)
             s.words = []
@@ -160,6 +162,15 @@ class ONMTGenerator:
                 self.data.sentences.append(representation.Dataset.Sentence(e))
                 self.data.sentences[-1].words = []
             self.data.sentences[-1].addWord(cv,"UNK")
+        elif(self.label_representation == "DecoderHiddenLayer" and meta["name"] == "rnn"):
+            cv = numpy.array(data[0]).squeeze()
+            if(meta["sentence"] != len(self.data.target_representation)):
+                e = numpy.array([])
+                e.resize(0,cv.shape[0])
+                self.data.target_representation.append(representation.Dataset.Sentence(e))
+                self.data.target_representation[-1].words = []
+            self.data.target_representation[-1].addWord(cv,"UNK")
+
 
 
 
