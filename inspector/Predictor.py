@@ -9,6 +9,8 @@ from torch import FloatTensor
 import torch
 import deepdish as dd
 from numpy import zeros
+from numpy import array
+from sklearn.neighbors import NearestNeighbors
 
 
 class Predictor:
@@ -76,6 +78,7 @@ class Predictor:
                 ls.append(l.tolist())
 
         self.dataset = utils.data.TensorDataset(FloatTensor(samples), FloatTensor(ls))
+        self.graph = NearestNeighbors(n_neighbors=10, algorithm='ball_tree').fit(array(samples))
 
     def buildModel(self):
         self.inputSize = self.data.sentences[0].data[0].size
@@ -89,6 +92,10 @@ class Predictor:
         all = 0;
         count = 0
         relative = 0;
+
+        index = 0;
+        hit = 0;
+        nearHit=0
 
         for i, data in enumerate(self.trainloader, 0):
             # get the inputs
@@ -105,10 +112,26 @@ class Predictor:
             count += loss.shape[0]
             if (self.output):
                 for i in range(loss.shape[0]):
-                    print("Distance: ", loss[i].item(), "Length: ",length[i].item(),"Relativ distance: ",100*loss[i].item()/length[i].item())
+                    print("Distance: ", loss[i].item(), "Length: ",length[i].item(),"Relativ distance: ",100*loss[i].item()/length[i].item(),end=" ")
+                    distances, indices = self.graph.kneighbors(array([outputs[i].tolist()]))
+                    if(index == indices[0][0]):
+                        print("HIT",end=" ")
+                        hit += 1;
+                    else:
+                        print ("NoHIT",end=" ")
+                    if(index in indices[0]):
+                        print("NearHIT")
+                        nearHit += 1;
+                    else:
+                        print("NoNearHIT")
+
+                    index +=1;
 
         print(" Distance: ", all, " Avg distance: ", 1.0 * all / count)
         print(" rel. Distance: ", relative, " Avg rel distance: ", 1.0 * relative / count)
+        print("Hits:",hit,"Precentage:",1.0*hit/count)
+        print("Near Hits:",nearHit,"Precentage:",1.0*nearHit/count)
+
 
     def train(self):
 
