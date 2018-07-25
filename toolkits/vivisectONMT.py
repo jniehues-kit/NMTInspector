@@ -148,7 +148,8 @@ class ONMTGenerator:
             self.data.sentences[-1].addWord(cv,"UNK")
 
         elif(self.representation == "DecoderWordEmbeddings" and meta["name"] == "embeddings"):
-            emb = numpy.array(data).squeeze()
+            emb = numpy.array(data)
+            emb = emb.reshape((emb.shape[1], emb.shape[3]))
             s = representation.Dataset.Sentence(emb)
             s.words = []
             for i in range(len(emb)):
@@ -163,7 +164,8 @@ class ONMTGenerator:
                 self.data.sentences[-1].words = []
             self.data.sentences[-1].addWord(cv,"UNK")
         elif(self.label_representation == "DecoderHiddenLayer" and meta["name"] == "rnn"):
-            cv = numpy.array(data[0]).squeeze()
+            cv = numpy.array(data[0])
+            cv = cv.reshape(cv.shape[1])
             if(meta["sentence"] != len(self.data.target_representation)):
                 e = numpy.array([])
                 e.resize(0,cv.shape[0])
