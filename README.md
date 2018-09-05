@@ -25,3 +25,9 @@ Currently, NMT models from OpenNMT-py are supported.
 
 
 ## Example use cases
+
+### Sentence-level classification
+
+The idea of this use case is to inspect if some property of a sentence is represented.
+Therefore, it is possible to train a classifier, which uses a representation of the sentence as input.
+We obtain the representation by summing over the representation of each token in the sentence [Example](docs/SentenceClassifier.md)
