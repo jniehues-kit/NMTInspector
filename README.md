@@ -31,3 +31,15 @@ Currently, NMT models from OpenNMT-py are supported.
 The idea of this use case is to inspect if some property of a sentence is represented.
 Therefore, it is possible to train a classifier, which uses a representation of the sentence as input.
 We obtain the representation by summing over the representation of each token in the sentence [Example](docs/SentenceClassifier.md)
+
+### Token-level classification
+
+The idea of this use case is to inspect if some property of a token is represented.
+Therefore, it is possible to train a classifier, which uses a representation of each token as input.
+For EncoderWordEmbeddings and EncoderHiddenLayer the number of tokens equals the number of source tokens.
+For the other representations the number of tokens represents the number of words +1 for each sentences, since als an
+end-of-sentence token is predicted. [Example](docs/TokenClassifier.md)
+
+## Extraction of hidden representation
+
+Store hidden representation for external analysis [Example](docs/Extraction.md)

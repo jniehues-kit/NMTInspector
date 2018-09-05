@@ -1,8 +1,8 @@
-# Sentence Classifier
+# Token Classifier
 
 ## Train classifier:
 ```
-python $NMTInspector/Inspect.py -prediction_task SentenceLabels 
+python $NMTInspector/Inspect.py -prediction_task TokenLabels 
                                 -ml_technique classifier 
                                 -representation $rep 
                                 -source_test_data $source_file
@@ -13,7 +13,7 @@ python $NMTInspector/Inspect.py -prediction_task SentenceLabels
                                 -gpuid $gpu 
                                 -inspection_model $classifier 
                                 -store_inspection_model 
-                                -inspection_model_input sentence 
+                                -inspection_model_input word
                                 -output_predictions
 ```
 
@@ -29,7 +29,7 @@ with
 ## Use classifier on test data
 
 ```
-python $NMTInspector/Inspect.py -prediction_task SentenceLabels 
+python $NMTInspector/Inspect.py -prediction_task TokenLabels 
                                 -ml_technique classifier 
                                 -representation $rep 
                                 -source_test_data $source_file
@@ -40,7 +40,7 @@ python $NMTInspector/Inspect.py -prediction_task SentenceLabels
                                 -gpuid $gpu 
                                 -inspection_model $classifier 
                                 -load_inspection_model 
-                                -inspection_model_input sentence 
+                                -inspection_model_input word
                                 -output_predictions
 ```
 
