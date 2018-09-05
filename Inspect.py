@@ -20,6 +20,7 @@ import inspector.Intrinsic
 import inspector.Classifier
 import inspector.Predictor
 import inspector.Autoencoder
+import representation.Transformation
 import json
 
 
@@ -40,6 +41,11 @@ def main():
                         choices=['intrinsic','classifier','predictor','autoencoder','none'],
                         help="""Technique used to analse the hidden representations""")
 
+    parser.add_argument('-transform_data', type=str, default='none',
+                        choices=['none', 'alignmentMatrix'],
+                       help="""Prefrom additional transformation on the extracted representation""")
+
+
     parser.add_argument('-inspection_model', type=str, default="",
                         help="""File to save/load the model used for inspection""")
     parser.add_argument('-store_inspection_model', action='store_true',
@@ -59,7 +65,7 @@ def main():
 
     parser.add_argument('-representation', type=str, default="EncoderWordEmbeddings",
                         choices=['EncoderWordEmbeddings','EncoderHiddenLayer','ContextVector','DecoderWordEmbeddings',
-                                 'DecoderHiddenLayer'],
+                                 'DecoderHiddenLayer','AttentionWeights'],
                         help="""Representation should be analysed""")
     parser.add_argument('-label_representation', type=str, default="",
                         choices=['','EncoderWordEmbeddings','EncoderHiddenLayer','ContextVector','DecoderWordEmbeddings',
@@ -136,6 +142,11 @@ def main():
     #print("Number of sentences:",len(data.sentences))
     #for i in range(len(data.sentences)):
     #    print(data.sentences[i].data.shape)
+
+
+    print("Transformation:",opt.transform_data)
+    if(opt.transform_data == "alignmentMatrix"):
+        representation.Transformation.transformAlignmentMatrix(data)
 
     #annote hidden representation with labels
     if(opt.prediction_task == "BPE"):

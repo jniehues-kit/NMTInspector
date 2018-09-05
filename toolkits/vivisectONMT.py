@@ -44,7 +44,7 @@ class ONMTGenerator:
         if(self.representation == "EncoderWordEmbeddings" or self.representation == "EncoderHiddenLayer"):
             self.translator.model.encoder._vivisect = {"iteration":0, "rescore": 1, "sentence": 0,"model_name": "OpenNMT", "framework": "pytorch"}
             probe(self.translator.model.encoder, select=self.monitorONMT, perform=self.performONMT,cb=self.storeData)
-        elif(self.representation == "ContextVector" or self.representation == "DecoderWordEmbeddings" or self.representation == "DecoderHiddenLayer"):
+        elif(self.representation == "ContextVector" or self.representation == "AttentionWeights" or self.representation == "DecoderWordEmbeddings" or self.representation == "DecoderHiddenLayer"):
             #need to use the encoder to see when a sentence start
             self.translator.model.decoder._vivisect = {"iteration":0, "sentence": 0, "model_name": "OpenNMT", "framework": "pytorch"}
             probe(self.translator.model.decoder,select=self.monitorONMT, perform=self.performONMT,cb=self.storeData)
@@ -72,7 +72,7 @@ class ONMTGenerator:
             return True
         elif (type(layer).__name__ == "Embeddings" and self.representation == "EncoderWordEmbeddings"):
             return True
-        elif (type(layer).__name__ == "GlobalAttention" and self.representation == "ContextVector"):
+        elif (type(layer).__name__ == "GlobalAttention" and (self.representation == "ContextVector" or self.representation == "AttentionWeights")):
             return True
         elif (type(layer).__name__ == "StackedLSTM" and (self.representation == "DecoderHiddenLayer"
                                                             or self.label_representation == "DecoderHiddenLayer")):
@@ -80,7 +80,7 @@ class ONMTGenerator:
         elif (type(layer).__name__ == "Embeddings" and self.representation == "DecoderWordEmbeddings"):
             return True
         elif (type(layer).__name__ == "LSTM" and (self.representation == "ContextVector" or
-        self.representation == "DecoderHiddenLayer")):
+        self.representation == "DecoderHiddenLayer" or self.representation == "AttentionWeights")):
             return True
         return False
 
@@ -103,7 +103,7 @@ class ONMTGenerator:
                     return self.translator.model.encoder._vivisect["rescore"] == 1
                 else:
                     return True
-            if(self.representation == "ContextVector" or self.representation == "DecoderWordEmbeddings" or
+            if(self.representation == "ContextVector" or self.representation == "AttentionWeights" or self.representation == "DecoderWordEmbeddings" or
                     self.representation == "DecoderHiddenLayer"):
                 if self.translator.model.encoder._vivisect["rescore"] == 1:
                     #need to know which sentence ends
@@ -146,6 +146,14 @@ class ONMTGenerator:
                 self.data.sentences.append(representation.Dataset.Sentence(e))
                 self.data.sentences[-1].words = []
             self.data.sentences[-1].addWord(cv,"UNK")
+        elif(self.representation == "AttentionWeights"):
+            aw = numpy.array(data[1]).reshape((len(data[1][0])))
+            if(meta["sentence"] != len(self.data.sentences)):
+                e = numpy.array([])
+                e.resize(0,aw.shape[0])
+                self.data.sentences.append(representation.Dataset.Sentence(e))
+                self.data.sentences[-1].words = []
+            self.data.sentences[-1].addWord(aw,"UNK")
 
         elif(self.representation == "DecoderWordEmbeddings" and meta["name"] == "embeddings"):
             emb = numpy.array(data)

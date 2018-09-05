@@ -2,14 +2,14 @@
 
 import argparse
 from sockeye import inference
-from sockeye import score
+from sockeye import translate
 from sockeye import constants as C
 from contextlib import ExitStack
 from sockeye import output_handler
 from sockeye import arguments
 from sockeye.translate import _setup_context
 
-from vivisect.pytorch import probe
+from vivisect.mxnet import probe
 
 import representation.Dataset
 
@@ -84,11 +84,9 @@ class SockeyeGenerator:
 
         self.data = representation.Dataset.Dataset("testdata")
 
-
-
-        #if(self.representation == "EncoderWordEmbeddings" or self.representation == "EncoderHiddenLayer"):
-        #    self.translator.model.encoder._vivisect = {"iteration":0, "rescore": 1, "model_name": "OpenNMT", "framework": "pytorch"}
-        #    probe(self.translator.model.encoder, select=self.monitorONMT, perform=self.performONMT,cb=self.storeData)
+        if(self.representation == "EncoderWordEmbeddings" or self.representation == "EncoderHiddenLayer"):
+            self.translator.models[0].encoder_module._vivisect = {"iteration":0, "rescore": 1, "model_name": "Sockeye", "framework": "mxnet"}
+            probe(self.translator.models[0].encoder_module, select=self.monitorONMT, perform=self.performONMT,cb=self.storeData)
         #elif(self.representation == "ContextVector" or self.representation == "DecoderWordEmbeddings" or self.representation == "DecoderHiddenLayer"):
         #    #need to use the encoder to see when a sentence start
         #    self.translator.model.decoder._vivisect = {"iteration":0, "sentence": 0, "model_name": "OpenNMT", "framework": "pytorch"}
@@ -104,16 +102,17 @@ class SockeyeGenerator:
 
     def generate(self):
         print("Target file:",self.tgt)
-        score.read_and_translate(translator=self.translator,
+        translate.read_and_translate(translator=self.translator,
                        output_handler=self.output_handler,
                        chunk_size=None,
                        input_file=self.src,
-                       target_file=None,
                        input_factors=None,
                        input_is_json=False)
+        print("Done")
         return self.data
 
     def monitorONMT(self,layer):
+        print(type(layer).__name__)
         if(type(layer).__name__ == "LSTM" and self.representation == "EncoderHiddenLayer"):
             return True
         elif (type(layer).__name__ == "Embeddings" and self.representation == "EncoderWordEmbeddings"):
@@ -130,6 +129,7 @@ class SockeyeGenerator:
         return False
 
     def performONMT(self,model, op, inputs, outputs):
+        print(type(model).__name__)
         if type(model).__name__ == "RNNEncoder":
             self.translator.model.encoder._vivisect["rescore"] = 1 - self.translator.model.encoder._vivisect["rescore"]
             if(self.representation == "EncoderHiddenLayer" or self.representation == "EncoderWordEmbeddings"):
