@@ -42,7 +42,7 @@ def main():
                         help="""Technique used to analse the hidden representations""")
 
     parser.add_argument('-transform_data', type=str, default='none',
-                        choices=['none', 'alignmentMatrix'],
+                        choices=['none', 'alignmentMatrix','alignmentMatrixZoom'],
                        help="""Prefrom additional transformation on the extracted representation""")
 
 
@@ -147,6 +147,8 @@ def main():
     print("Transformation:",opt.transform_data)
     if(opt.transform_data == "alignmentMatrix"):
         representation.Transformation.transformAlignmentMatrix(data)
+    elif(opt.transform_data == "alignmentMatrixZoom"):
+        representation.Transformation.zoomAlignmentMatrix(data)
 
     #annote hidden representation with labels
     if(opt.prediction_task == "BPE"):
