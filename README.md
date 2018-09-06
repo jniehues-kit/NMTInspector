@@ -40,11 +40,11 @@ For EncoderWordEmbeddings and EncoderHiddenLayer the number of tokens equals the
 For the other representations the number of tokens represents the number of words +1 for each sentences, since als an
 end-of-sentence token is predicted. [Example](docs/TokenClassifier.md)
 
-## Extraction of hidden representation
+### Extraction of hidden representation
 
 Store hidden representation for external analysis [Example](docs/Extraction.md)
 
-##Outlier detection
+### Outlier detection
 The idea is to detect hidden states that are not typical for the NMT system.
 This is done by training a auto-encoder on the hidden state. In a second step the reconstruction error is measured.
 Then the reconstruction error on unusual states should be lower than the one on un-unusual states. [Example](docs/Autoencoder.md)
